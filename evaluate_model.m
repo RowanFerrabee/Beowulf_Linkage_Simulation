@@ -10,6 +10,8 @@ function [performance] = evaluate_model(params, does_print, does_plot)
     figure;
   end
   
+  didItBreak = false;
+  
   for i = 1:6
 
     angle = 12*(i-1);
@@ -29,6 +31,11 @@ function [performance] = evaluate_model(params, does_print, does_plot)
 
     joints = [back_of_hand_joint; joints];
     points = linkage_positions(joints, link_lengths, link_ratios);
+    if points == [-100,-100;-100,-100;-100,-100;-100,-100;-100,-100]
+      fprintf('Broke at angle %d\n', angle)
+      didItBreak = true;
+      break;
+    end
 
     %% Solve for forces
 
@@ -80,22 +87,34 @@ function [performance] = evaluate_model(params, does_print, does_plot)
     
     %% Checks
     if (abs(norm(joints(1,:)-points(1,:)) - link_lengths(1)) > 0.001)
-      fprintf('Link 1 Wrong Length')
+      fprintf('Link 1 Wrong Length\n')
+      didItBreak = true;
+      break;
     end
     if (abs(norm(points(2,:)-points(1,:)) - link_lengths(2)) > 0.001)
-      fprintf('Link 2 Wrong Length')
+      fprintf('Link 2 Wrong Length\n')
+      didItBreak = true;
+      break;
     end
     if (abs(norm(joints(2,:)-points(3,:)) - link_lengths(3)) > 0.001)
-      fprintf('Link 3 Wrong Length')
+      fprintf('Link 3 Wrong Length\n')
+      didItBreak = true;
+      break;
     end
     if (abs(norm(points(4,:)-points(3,:)) - link_lengths(4)) > 0.001)
-      fprintf('Link 4 Wrong Length')
+      fprintf('Link 4 Wrong Length\n')
+      didItBreak = true;
+      break;
     end
     if (abs(norm(joints(3,:)-points(5,:)) - link_lengths(5)) > 0.001)
-      fprintf('Link 5 Wrong Length')
+      fprintf('Link 5 Wrong Length\n')
+      didItBreak = true;
+      break;
     end
     if (abs(norm(joints(4,:)-points(5,:)) - link_lengths(6)) > 0.001)
-      fprintf('Link 6 Wrong Length')
+      fprintf('Link 6 Wrong Length\n')
+      didItBreak = true;
+      break;
     end
 
     if does_plot
@@ -151,4 +170,7 @@ function [performance] = evaluate_model(params, does_print, does_plot)
     
   end
 
+  if didItBreak
+    performance = -100;
+  end
 end
