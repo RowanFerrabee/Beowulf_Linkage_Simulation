@@ -3,7 +3,7 @@ function [performance] = evaluate_model(params, does_print, does_plot)
   performance = 0;
   [finger_section_lengths,back_of_hand_joint,finger_attachment_heights,link_lengths,link_ratios] = deal(params{:});
 
-  angle_weights = [1,1.2,1.4,1.6,1.8,2];
+  angle_weights = [0.002, 1.2, 1.4, 1.6, 1.8, 2];%[1,1.2,1.4,1.6,1.8,2];
   link_weights = [1,1.4,1.8];
   
   if does_plot
@@ -12,6 +12,7 @@ function [performance] = evaluate_model(params, does_print, does_plot)
   
   didItBreak = false;
   
+  % Loop through positions
   for i = 1:6
 
     angle = 12*(i-1);
@@ -20,7 +21,7 @@ function [performance] = evaluate_model(params, does_print, does_plot)
       fprintf('Evaluating finger at angle: %d\n',angle)
     end
     
-    %% Get finger geometry
+    % Get finger geometry
     finger_section_angles = [angle, angle, angle];
 
     % Get position of finger attachment joints
@@ -32,12 +33,12 @@ function [performance] = evaluate_model(params, does_print, does_plot)
     joints = [back_of_hand_joint; joints];
     points = linkage_positions(joints, link_lengths, link_ratios);
     if points == [-100,-100;-100,-100;-100,-100;-100,-100;-100,-100]
-      fprintf('Broke at angle %d\n', angle)
+      %fprintf('Broke at angle %d\n', angle)
       didItBreak = true;
       break;
     end
 
-    %% Solve for forces
+    % Solve for forces
 
     % Link 1
 
@@ -85,50 +86,72 @@ function [performance] = evaluate_model(params, does_print, does_plot)
       fprintf('Node 4: %f, %f \n\n', reactionC(1), reactionC(2));
     end
     
-    %% Checks
+    % Checks
     if (abs(norm(joints(1,:)-points(1,:)) - link_lengths(1)) > 0.001)
-      fprintf('Link 1 Wrong Length\n')
+      %fprintf('Link 1 Wrong Length\n')
       didItBreak = true;
       break;
     end
     if (abs(norm(points(2,:)-points(1,:)) - link_lengths(2)) > 0.001)
-      fprintf('Link 2 Wrong Length\n')
+      %fprintf('Link 2 Wrong Length\n')
       didItBreak = true;
       break;
     end
     if (abs(norm(joints(2,:)-points(3,:)) - link_lengths(3)) > 0.001)
-      fprintf('Link 3 Wrong Length\n')
+      %fprintf('Link 3 Wrong Length\n')
       didItBreak = true;
       break;
     end
     if (abs(norm(points(4,:)-points(3,:)) - link_lengths(4)) > 0.001)
-      fprintf('Link 4 Wrong Length\n')
+      %fprintf('Link 4 Wrong Length\n')
       didItBreak = true;
       break;
     end
     if (abs(norm(joints(3,:)-points(5,:)) - link_lengths(5)) > 0.001)
-      fprintf('Link 5 Wrong Length\n')
+      %fprintf('Link 5 Wrong Length\n')
       didItBreak = true;
       break;
     end
     if (abs(norm(joints(4,:)-points(5,:)) - link_lengths(6)) > 0.001)
-      fprintf('Link 6 Wrong Length\n')
+      %fprintf('Link 6 Wrong Length\n')
       didItBreak = true;
       break;
+    end
+    
+    % Check for intersections
+    line_1 = {joints(1,1), joints(1,2), points(1,1), points(1,2)};
+    line_2 = {knuckles(1,1), knuckles(1,2), joints(2,1), joints(2,2)};
+    do_intersect = lines_intersect(line_1, line_2);
+    if do_intersect
+        didItBreak = true;
+    end
+    
+    line_1 = {joints(2,1), joints(2,2), points(3,1), points(3,2)};
+    line_2 = {knuckles(2,1), knuckles(2,2), joints(3,1), joints(3,2)};
+    do_intersect = lines_intersect(line_1, line_2);
+    if do_intersect
+        didItBreak = true;
+    end
+    
+    line_1 = {joints(3,1), joints(3,2), points(5,1), points(5,2)};
+    line_2 = {knuckles(3,1), knuckles(3,2), joints(4,1), joints(4,2)};
+    do_intersect = lines_intersect(line_1, line_2);
+    if do_intersect
+        didItBreak = true;
     end
 
     if does_plot
       
       MAX_FORCE_ARROW = 4;
-      %% Plot it all
+      % Plot it all
       subplot(2,3,i)
       hold on;
       % Plot all links
-      plot(points(:,1),points(:,2))
-      plot([joints(4,1),points(5,1)],[joints(4,2),points(5,2)])
-      plot([joints(3,1),points(5,1)],[joints(3,2),points(5,2)])
-      plot([joints(2,1),points(3,1)],[joints(2,2),points(3,2)])
-      plot([joints(1,1),points(1,1)],[joints(1,2),points(1,2)])
+      plot(points(:,1),points(:,2), 'b')
+      plot([joints(4,1),points(5,1)],[joints(4,2),points(5,2)], 'b')
+      plot([joints(3,1),points(5,1)],[joints(3,2),points(5,2)], 'b')
+      plot([joints(2,1),points(3,1)],[joints(2,2),points(3,2)], 'b')
+      plot([joints(1,1),points(1,1)],[joints(1,2),points(1,2)], 'b')
       % Plot all pin joints
       scatter([joints(:,1);knuckles(:,1);points(:,1);joints(:,1)],[joints(:,2);knuckles(:,2);points(:,2);joints(:,2)],9)
       % Plot finger attachments
@@ -164,9 +187,9 @@ function [performance] = evaluate_model(params, does_print, does_plot)
     angle_weights(i)*link_weights(2)*reactionC*(ideal_reactionC.');
     angle_weights(i)*link_weights(3)*reactionD*(ideal_reactionD.');
     
-    performance += angle_weights(i)*link_weights(1)*reactionB*(ideal_reactionB.');
-    performance += angle_weights(i)*link_weights(2)*reactionC*(ideal_reactionC.');
-    performance += angle_weights(i)*link_weights(3)*reactionD*(ideal_reactionD.');
+    performance = performance + angle_weights(i)*link_weights(1)*reactionB*(ideal_reactionB.');
+    performance = performance + angle_weights(i)*link_weights(2)*reactionC*(ideal_reactionC.');
+    performance = performance + angle_weights(i)*link_weights(3)*reactionD*(ideal_reactionD.');
     
   end
 
