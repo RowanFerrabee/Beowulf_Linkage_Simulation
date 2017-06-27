@@ -5,19 +5,19 @@ more off;
 
 % Constants
 MIN_LINK_LENGTH = 1;
-MAX_LINK_LENGTH = 4;
+MAX_LINK_LENGTH = 7;
 MAX_LINK_RATIO = 1;
 MIN_LINK_RATIO = 0;
 
 MAX_PERFORMANCE = 0;
 params_at_max = {};
 
-for rand_test = 1:1000
+for rand_test = 1:5000
     rand_test
     % Define starting finger conditions
-    finger_section_lengths = [2,2,2];
-    back_of_hand_joint = [-1,1];
-    finger_attachment_heights = [1,1,1];
+    finger_section_lengths = [3.2,2.4,1.8];
+    back_of_hand_joint = [-1,2];
+    finger_attachment_heights = [1.8,1.8,1.8];
 
     link_lengths(1:6) = MIN_LINK_LENGTH;
     link_lengths = link_lengths + (MAX_LINK_LENGTH - MIN_LINK_LENGTH).*rand(1,6);
@@ -42,7 +42,7 @@ for rand_test = 1:1000
         performance = evaluate_model(params, false, false);
         
         % TODO: Here, check for decreasing value, not staying the same
-        if (abs(prev_performance - performance) <  1e-5 || iter > 20000) 
+        if (abs(prev_performance - performance) <  3e-5 || iter > 20000 || performance < 0) 
             did_break = true;
         else
             prev_performance = performance;
